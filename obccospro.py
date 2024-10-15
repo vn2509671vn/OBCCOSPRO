@@ -168,6 +168,69 @@ def getTTTT():
     # Trả về kết quả từ API cho client
     return jsonify(response.json()), response.status_code
 
+# Hàm GET để lấy số lượng tin nhắn chưa đọc
+@app.route('/getUnreadMessageCount', methods=['GET'])
+def getUnreadMessageCount():
+    token = request.headers.get('Authorization')
+    
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 400
+
+    url = "https://api-obccos.vnpt.vn/message/getUnreadMessageCount"
+    
+    headers = {
+        'Accept': '*/*',
+        'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+        'Authorization': token,  # Dùng token từ header
+        'Connection': 'keep-alive',
+        'Mac-address': 'WEB',
+        'Origin': 'https://obccos.vnpt.vn',
+        'Referer': 'https://obccos.vnpt.vn/',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+        'SelectedMenuId': '0',
+        'SelectedPath': '',
+        'Token-id': '97388db0-6ce9-11ea-bc55-0242ac130003',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+        'sec-ch-ua': '"Google Chrome";v="129", "Not=A?Brand";v="8", "Chromium";v="129"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"'
+    }
+
+    response = requests.get(url, headers=headers)
+    
+    return jsonify(response.json()), response.status_code
+
+# Hàm GET để tìm kiếm người dùng với "user_code"
+@app.route('/searchUser', methods=['GET'])
+def searchUser():
+    token = request.headers.get('Authorization')
+    
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 400
+
+    user_code = request.args.get('user_code')
+    
+    if not user_code:
+        return jsonify({"error": "user_code parameter is required"}), 400
+
+    url = f"https://api-obccos.vnpt.vn/search-user?user_code={user_code}"
+    
+    headers = {
+        'sec-ch-ua-platform': '"Windows"',
+        'Authorization': token,  # Dùng token từ header
+        'Referer': 'https://obccos.vnpt.vn/',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+        'sec-ch-ua': '"Google Chrome";v="129", "Not=A?Brand";v="8", "Chromium";v="129"',
+        'Content-Type': 'application/json',
+        'sec-ch-ua-mobile': '?0'
+    }
+
+    response = requests.get(url, headers=headers)
+    
+    return jsonify(response.json()), response.status_code
+
 
 
 # Endpoint test server
