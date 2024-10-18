@@ -388,6 +388,123 @@ def HenGoiLaiCKN():
     # Trả về kết quả từ API cho client
     return jsonify(response.json()), response.status_code
 
+@app.route('/obccos/GetListUser', methods=['GET'])
+def GetListUser():
+    # Lấy token từ header của request
+    token = request.headers.get('Authorization')
+
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 400
+
+    # URL API GET danh sách người dùng
+    url = "https://api-obccos.vnpt.vn/list-user?size=9999"
+
+    headers = {
+        'Accept': '*/*',
+        'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+        'Authorization': token,  # Sử dụng token từ header của client
+        'Connection': 'keep-alive',
+        'Mac-address': 'WEB',
+        'Origin': 'https://obccos.vnpt.vn',
+        'Referer': 'https://obccos.vnpt.vn/',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+        'SelectedMenuId': '0',
+        'SelectedPath': '',
+        'Token-id': '97388db0-6ce9-11ea-bc55-0242ac130003',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+        'sec-ch-ua': '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"'
+    }
+
+    # Gửi GET request đến API
+    response = requests.get(url, headers=headers)
+
+    # Kiểm tra mã phản hồi từ API
+    if response.status_code == 200:
+        response_json = response.json()
+        if response_json['code'] == 200:
+            # Trích xuất danh sách người dùng từ response
+            users = response_json['data']['data']
+
+            # Lọc các user_name cần thiết
+            filtered_users = [
+                user for user in users 
+                if user['user_name'] in ['tuyenvtt_vtag', 'trild_agg_vnp2', 'thaont1_agg_vnp2', 'loanntp1_agg_vnp2', 'hoangnb_agg_vnp2', 'lyhtt2_agg_vnp2', 'giangtt_agg_vnp2', 'ngochtk1_agg_vnp2', 'nhintb_agg_vnp2', 'luyennt_agg_vnp2', 'binhnny_agg_vnp2', 'nhungbtn_agg_vnp2', 'phuongdtm_agg_vnp2']
+            ]
+
+            # Cấu trúc response trả về cho client
+            return jsonify({
+                "code": 200,
+                "data": {
+                    "data": filtered_users,
+                    "total_page": 1,
+                    "total_row": len(filtered_users)
+                },
+                "error_msg": "",
+                "msg": "List user success"
+            }), 200
+        else:
+            return jsonify({"error": response_json.get("error_msg", "Unknown error")}), 400
+    else:
+        return jsonify({"error": "Failed to fetch data from API"}), response.status_code
+
+@app.route('/obccos/ChuyenOB', methods=['PUT'])
+def ChuyenOB():
+    # Lấy token từ header của request
+    token = request.headers.get('Authorization')
+
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 400
+
+    # Lấy các parameters từ query string
+    progId = request.args.get('progId') # ID của chương trình CKD hoặc CKN
+    id_value = request.args.get('id') # ID của SDT được lưu hẹn gọi lại
+    pban = "5fff2235-f72c-8aff-ff80-efcb607008a0" # AGG là 5fff2235-f72c-8aff-ff80-efcb607008a0 nên fix cứng luôn
+    ktv = request.args.get('ktv') # user_code của DTV
+
+    # Kiểm tra các parameters bắt buộc
+    if not progId or not id_value or not ktv:
+        return jsonify({"error": "Missing required parameters"}), 400
+
+    # URL API chuyển TB (OB) với các parameters từ client
+    url = f"https://api-obccos.vnpt.vn/cnhan/chuyentb?progId={progId}&id={id_value}&pban={pban}&ktv={ktv}"
+
+    headers = {
+        'Accept': '*/*',
+        'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+        'Authorization': token,  # Sử dụng token từ header của client
+        'Connection': 'keep-alive',
+        'Content-Length': '0',
+        'Mac-address': 'WEB',
+        'Origin': 'https://obccos.vnpt.vn',
+        'Referer': 'https://obccos.vnpt.vn/',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+        'SelectedMenuId': '0',
+        'SelectedPath': '',
+        'Token-id': '97388db0-6ce9-11ea-bc55-0242ac130003',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+        'sec-ch-ua': '"Google Chrome";v="129", "Not=A?Brand";v="8", "Chromium";v="129"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"'
+    }
+
+    payload = {}
+
+    # Gửi PUT request đến API
+    response = requests.put(url, headers=headers, data=payload)
+
+    # Trả về kết quả cho client
+    if response.status_code == 200:
+        return jsonify(response.json()), 200
+    else:
+        return jsonify({"error": "Failed to perform request"}), response.status_code
+
+
 # Endpoint test server
 @app.route('/ping', methods=['GET'])
 def ping():
