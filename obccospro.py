@@ -504,6 +504,151 @@ def ChuyenOB():
     else:
         return jsonify({"error": "Failed to perform request"}), response.status_code
 
+@app.route('/obccos/BaoCaoCKN', methods=['GET'])
+def BaoCaoCKN():
+    # Lấy token từ header của request
+    token = request.headers.get('Authorization')
+
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 400
+
+    # Lấy các parameters từ query string
+    vnptOrgCode = "AGG"  # Mặc định là 'AGG' nếu không có
+    loaiCt = "654a0177809c73686543c3b5"
+    fromN = request.args.get('fromN')
+    toN = request.args.get('toN')
+    page = 1
+    size = 100000
+
+    # Nhận giá trị "EMPLOYEENAME" từ query parameter
+    employeename = request.args.get('employeename') # employeename là user_name của client truyền vào (ví dụ: thaont1_agg_vnp2)
+
+    # Kiểm tra các parameters bắt buộc
+    if not loaiCt or not fromN or not toN or not employeename:
+        return jsonify({"error": "Missing required parameters"}), 400
+
+    # URL API báo cáo CKN với các parameters từ client
+    url = f"https://api-obccos.vnpt.vn/bcCKN/view32?vnptOrgCode={vnptOrgCode}&loaiCt={loaiCt}&fromN={fromN}&toN={toN}&page={page}&size={size}"
+
+    headers = {
+        'Accept': '*/*',
+        'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+        'Authorization': token,  # Sử dụng token từ header của client
+        'Connection': 'keep-alive',
+        'Mac-address': 'WEB',
+        'Origin': 'https://obccos.vnpt.vn',
+        'Referer': 'https://obccos.vnpt.vn/',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+        'SelectedMenuId': '0',
+        'SelectedPath': '',
+        'Token-id': '97388db0-6ce9-11ea-bc55-0242ac130003',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+        'sec-ch-ua': '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"'
+    }
+
+    payload = {}
+
+    # Gửi GET request đến API
+    response = requests.get(url, headers=headers, data=payload)
+
+    if response.status_code == 200:
+        # Lấy dữ liệu JSON từ response
+        api_data = response.json()
+
+        # Lọc các phần tử trong "data" có EMPLOYEENAME khớp với giá trị từ query parameter
+        if(employeename != 'tgmthanglxn_agg' and employeename != 'gqkn800126_agg_vnp2'):
+            filtered_data = [item for item in api_data['data'] if item['EMPLOYEENAME'] == employeename]
+
+            # Cấu trúc lại response để trả về cho client
+            result = {
+                "SL": len(filtered_data),  # Cập nhật số lượng phần tử sau khi lọc
+                "data": filtered_data,
+                "errorCode": api_data.get("errorCode"),
+                "message": api_data.get("message")
+            }
+        else:
+            result = response
+
+        return jsonify(result), 200
+    else:
+        return jsonify({"error": "Failed to fetch data"}), response.status_code
+
+
+@app.route('/obccos/BaoCaoCKD', methods=['GET'])
+def BaoCaoCKD():
+    # Lấy token từ header của request
+    token = request.headers.get('Authorization')
+
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 400
+
+    # Lấy các parameters từ query string
+    vnptOrgCode = "AGG"  # Mặc định là 'AGG' nếu không có
+    loaiCt = "654a0177809c73686543c3b3"
+    fromN = request.args.get('fromN')
+    toN = request.args.get('toN')
+
+    # Nhận giá trị "EMPLOYEENAME" từ query parameter
+    employeename = request.args.get('employeename') # employeename là user_name của client truyền vào (ví dụ: thaont1_agg_vnp2)
+
+    # Kiểm tra các parameters bắt buộc
+    if not loaiCt or not fromN or not toN or not employeename:
+        return jsonify({"error": "Missing required parameters"}), 400
+
+    # URL API báo cáo CKN với các parameters từ client
+    url = f"https://api-obccos.vnpt.vn/bcCKD/view22?vnptOrgCode={vnptOrgCode}&loaiCt={loaiCt}&fromN={fromN}&toN={toN}"
+
+    headers = {
+        'Accept': '*/*',
+        'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+        'Authorization': token,  # Sử dụng token từ header của client
+        'Connection': 'keep-alive',
+        'Mac-address': 'WEB',
+        'Origin': 'https://obccos.vnpt.vn',
+        'Referer': 'https://obccos.vnpt.vn/',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+        'SelectedMenuId': '0',
+        'SelectedPath': '',
+        'Token-id': '97388db0-6ce9-11ea-bc55-0242ac130003',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+        'sec-ch-ua': '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"'
+    }
+
+    payload = {}
+
+    # Gửi GET request đến API
+    response = requests.get(url, headers=headers, data=payload)
+
+    if response.status_code == 200:
+        # Lấy dữ liệu JSON từ response
+        api_data = response.json()
+
+        # Lọc các phần tử trong "data" có EMPLOYEENAME khớp với giá trị từ query parameter
+        if(employeename != 'tgmthanglxn_agg' and employeename != 'gqkn800126_agg_vnp2'):
+            filtered_data = [item for item in api_data['data'] if item['EMPLOYEENAME'] == employeename]
+
+            # Cấu trúc lại response để trả về cho client
+            result = {
+                "SL": len(filtered_data),  # Cập nhật số lượng phần tử sau khi lọc
+                "data": filtered_data,
+                "errorCode": api_data.get("errorCode"),
+                "message": api_data.get("message")
+            }
+        else:
+            result = response
+
+        return jsonify(result), 200
+    else:
+        return jsonify({"error": "Failed to fetch data"}), response.status_code
+
 
 # Endpoint test server
 @app.route('/ping', methods=['GET'])
