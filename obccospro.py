@@ -531,23 +531,23 @@ def BaoCaoCKN():
     url = f"https://api-obccos.vnpt.vn/bcCKN/view32?vnptOrgCode={vnptOrgCode}&loaiCt={loaiCt}&fromN={fromN}&toN={toN}&page={page}&size={size}"
 
     headers = {
-        'Accept': '*/*',
-        'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
-        'Authorization': token,  # Sử dụng token từ header của client
-        'Connection': 'keep-alive',
-        'Mac-address': 'WEB',
-        'Origin': 'https://obccos.vnpt.vn',
-        'Referer': 'https://obccos.vnpt.vn/',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-site',
-        'SelectedMenuId': '0',
-        'SelectedPath': '',
-        'Token-id': '97388db0-6ce9-11ea-bc55-0242ac130003',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
-        'sec-ch-ua': '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"'
+    'Accept': '*/*',
+    'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+    'Authorization': token,
+    'Connection': 'keep-alive',
+    'Mac-address': 'WEB',
+    'Origin': 'https://obccos.vnpt.vn',
+    'Referer': 'https://obccos.vnpt.vn/',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-site',
+    'SelectedMenuId': '0',
+    'SelectedPath': '',
+    'Token-id': '97388db0-6ce9-11ea-bc55-0242ac130003',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+    'sec-ch-ua': '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"'
     }
 
     payload = {}
@@ -600,26 +600,26 @@ def BaoCaoCKD():
         return jsonify({"error": "Missing required parameters"}), 400
 
     # URL API báo cáo CKN với các parameters từ client
-    url = f"https://api-obccos.vnpt.vn/bcCKD/view22?vnptOrgCode={vnptOrgCode}&loaiCt={loaiCt}&fromN={fromN}&toN={toN}"
+    url = f"https://api-obccos.vnpt.vn/bcCKD/view22?vnptOrgCode={vnptOrgCode}&fromN={fromN}&toN={toN}&loaiCt={loaiCt}"
 
     headers = {
-        'Accept': '*/*',
-        'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
-        'Authorization': token,  # Sử dụng token từ header của client
-        'Connection': 'keep-alive',
-        'Mac-address': 'WEB',
-        'Origin': 'https://obccos.vnpt.vn',
-        'Referer': 'https://obccos.vnpt.vn/',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-site',
-        'SelectedMenuId': '0',
-        'SelectedPath': '',
-        'Token-id': '97388db0-6ce9-11ea-bc55-0242ac130003',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
-        'sec-ch-ua': '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"'
+    'Accept': '*/*',
+    'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+    'Authorization': token,
+    'Connection': 'keep-alive',
+    'Mac-address': 'WEB',
+    'Origin': 'https://obccos.vnpt.vn',
+    'Referer': 'https://obccos.vnpt.vn/',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-site',
+    'SelectedMenuId': '0',
+    'SelectedPath': '',
+    'Token-id': '97388db0-6ce9-11ea-bc55-0242ac130003',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+    'sec-ch-ua': '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"'
     }
 
     payload = {}
@@ -631,24 +631,20 @@ def BaoCaoCKD():
         # Lấy dữ liệu JSON từ response
         api_data = response.json()
 
-        # Lọc các phần tử trong "data" có EMPLOYEENAME khớp với giá trị từ query parameter
-        if(employeename != 'tgmthanglxn_agg' and employeename != 'gqkn800126_agg_vnp2'):
-            filtered_data = [item for item in api_data['data'] if item['EMPLOYEENAME'] == employeename]
+        filtered_data = [item for item in api_data['data'] if item['EMPLOYEENAME'] == employeename]
 
-            # Cấu trúc lại response để trả về cho client
-            result = {
-                "SL": len(filtered_data),  # Cập nhật số lượng phần tử sau khi lọc
-                "data": filtered_data,
-                "errorCode": api_data.get("errorCode"),
-                "message": api_data.get("message")
-            }
-        else:
-            result = response
+        # Cấu trúc lại response để trả về cho client
+        result = {
+            "SL": len(filtered_data),  # Cập nhật số lượng phần tử sau khi lọc
+            "data": filtered_data,
+            "errorCode": api_data.get("errorCode"),
+            "message": api_data.get("message")
+        }
 
         return jsonify(result), 200
     else:
         return jsonify({"error": "Failed to fetch data"}), response.status_code
-
+    
 
 # Endpoint test server
 @app.route('/ping', methods=['GET'])
