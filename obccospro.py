@@ -631,15 +631,19 @@ def BaoCaoCKD():
         # Lấy dữ liệu JSON từ response
         api_data = response.json()
 
-        filtered_data = [item for item in api_data['data'] if item['EMPLOYEENAME'] == employeename]
+        # Lọc các phần tử trong "data" có EMPLOYEENAME khớp với giá trị từ query parameter
+        if(employeename != 'tgmthanglxn_agg' and employeename != 'gqkn800126_agg_vnp2'):
+            filtered_data = [item for item in api_data['data'] if item['EMPLOYEENAME'] == employeename]
 
-        # Cấu trúc lại response để trả về cho client
-        result = {
-            "SL": len(filtered_data),  # Cập nhật số lượng phần tử sau khi lọc
-            "data": filtered_data,
-            "errorCode": api_data.get("errorCode"),
-            "message": api_data.get("message")
-        }
+            # Cấu trúc lại response để trả về cho client
+            result = {
+                "SL": len(filtered_data),  # Cập nhật số lượng phần tử sau khi lọc
+                "data": filtered_data,
+                "errorCode": api_data.get("errorCode"),
+                "message": api_data.get("message")
+            }
+        else:
+            result = response
 
         return jsonify(result), 200
     else:
