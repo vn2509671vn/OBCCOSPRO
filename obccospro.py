@@ -470,7 +470,7 @@ def ChuyenOB():
         return jsonify({"error": "Missing required parameters"}), 400
 
     # URL API chuyển TB (OB) với các parameters từ client
-    url = f"https://api-obccos.vnpt.vn/cnhan/chuyentb?progId={progId}&id={id_value}&pban={pban}&ktv={ktv}"
+    url = f"https://api-obccos.vnpt.vn/cnhan/chuyenTb?progId={progId}&id={id_value}&pban={pban}&ktv={ktv}"
 
     headers = {
         'Accept': '*/*',
