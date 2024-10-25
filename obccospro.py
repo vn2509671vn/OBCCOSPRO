@@ -2,8 +2,58 @@ from flask import Flask, request, jsonify
 import requests
 import json
 from flask_cors import CORS
+import jwt
+from datetime import datetime, timedelta
+from session_manager import SessionManager
+from crossale import CrossSaleAutomation
+import secrets
+from functools import wraps
 
 app = Flask(__name__)
+
+# Secret key để mã hóa JWT
+SECRET_KEY = secrets.token_hex(32)  # Tạo một chuỗi 64 ký tự ngẫu nhiên
+
+# Khởi tạo SessionManager với thời gian timeout là 10 phút
+session_manager = SessionManager(timeout=600)
+
+# Hàm tạo token JWT
+def create_token(username):
+    expiration = datetime.utcnow() + timedelta(minutes=10)
+    token = jwt.encode({'username': username, 'exp': expiration}, SECRET_KEY, algorithm='HS256')
+    return token
+
+# Hàm kiểm tra và giải mã JWT token từ header
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+
+        # Lấy token từ Authorization header
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            # Kiểm tra nếu Authorization bắt đầu bằng "Beer "
+            if auth_header.startswith('Beer '):
+                token = auth_header.split(" ")[1]  # Lấy phần token sau "Beer"
+            else:
+                return jsonify({'message': 'Token phải ở dạng Beer token!'}), 401
+
+        if not token:
+            return jsonify({'message': 'Token không được cung cấp!'}), 401
+
+        try:
+            # Giải mã token
+            data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            current_user = data['username']  # Thông tin của người dùng có thể nằm trong token
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'Token đã hết hạn!'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'message': 'Token không hợp lệ!'}), 401
+
+        # Thêm user vào kwargs để có thể sử dụng trong hàm được trang trí
+        return f(current_user, *args, **kwargs)
+
+    return decorated
 
 # Endpoint nhận request từ client và gửi tiếp tới API login
 @app.route('/obccos/login', methods=['POST'])
@@ -649,6 +699,68 @@ def BaoCaoCKD():
     else:
         return jsonify({"error": "Failed to fetch data"}), response.status_code
     
+# Hàm login vào hệ thống CCOS
+@app.route('/ccos/login', methods=['POST'])
+def login_ccos():
+    # Lấy dữ liệu từ request client gửi lên
+    client_data = request.json
+
+    username = client_data.get('username')
+    password = client_data.get('password')
+
+    # Tạo phiên bản CrossSaleAutomation
+    automation = CrossSaleAutomation()
+    login_response = automation.login_to_system(username, password)
+
+    if login_response['LoginSuccess']:
+        # Tạo token JWT cho user và lưu phiên
+        token = create_token(username)
+        session_manager.add_session(username, automation)
+
+        return jsonify({
+            'LoginSuccess': True,
+            'NeedOTP': login_response['NeedOTP'],
+            'Messenger': login_response['Messenger'],
+            'token': token
+        })
+    else:
+        return jsonify(login_response), 401
+
+# Hàm xác nhận OTP khi Login vào CCOS
+@app.route('/ccos/enter_otp', methods=['POST'])
+@token_required
+def enter_otp(current_user):
+    # Lấy dữ liệu từ request client gửi lên
+    client_data = request.json
+
+    otp = client_data.get('otp')
+
+    # Lấy session tương ứng với username
+    automation = session_manager.get_session(current_user)
+    if not automation:
+        return jsonify({"message": "Session expired or not found"}), 404
+
+    otp_response = automation.enter_otp(otp)
+
+    return jsonify(otp_response)
+
+# Hàm thực hiện gia hạn qua URL của OBCCOS
+@app.route('/ccos/gia_han_ckd', methods=['POST'])
+@token_required
+def gia_han_ckd(current_user):
+    # Lấy dữ liệu từ request client gửi lên
+    client_data = request.json
+
+    client_url = client_data.get('url')
+
+    # Lấy session tương ứng với username
+    automation = session_manager.get_session(current_user)
+    if not automation:
+        return jsonify({"message": "Session expired or not found"}), 404
+
+    gia_han_response = automation.gia_han(client_url)
+
+    return jsonify(gia_han_response)
 
 # Endpoint test server
 @app.route('/ping', methods=['GET'])

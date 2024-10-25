@@ -12,9 +12,9 @@ import time
 from urllib.parse import urlparse, parse_qs
 
 class CrossSaleAutomation:
-    def __init__(self, user_obccos):
-        self.chrome_driver_path = r"D:\ThangTGM\Tool\PYTHON\chromedriver-win64\chromedriver.exe"
-        self.user_profile_path = r"D:\ThangTGM\Tool\PYTHON\chromedriver-win64\chromedriver.exe" + user_profile_name
+    def __init__(self, user_ccos):
+        self.chrome_driver_path = r"D:\ThangTGM\Tool\PYTHON\chromedriver-win64\chromedriver.exe" # chỉnh lại khi chuyển máy
+        self.user_profile_path = r"D:\ThangTGM\Tool\PYTHON\chromedriver-win64\chromedriver.exe" + user_ccos # chỉnh lại khi chuyển máy
         self.driver = None
 
     def init_driver(self):
@@ -91,11 +91,8 @@ class CrossSaleAutomation:
                 "ConfirmOTPUrl": ""
             }
 
-    def enter_otp(self, url, otp):
+    def enter_otp(self, otp):
         try:
-            self.driver.get("http://ccos.vnpt.vn/Login.aspx")
-            time.sleep(4)
-
             otp_field = self.driver.find_element(By.ID, "txtOtp")
             otp_field.send_keys(otp)
 
