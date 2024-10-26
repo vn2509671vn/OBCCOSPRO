@@ -800,8 +800,8 @@ def tra_cuu_auto_call():
         and DATEDIFF(DAY, b.created_at, GETDATE()) < 45
         ) tmp
         order by tmp.created_at desc
-        """
-        cursor.execute(query, (sdt,sdt))
+        """.format(sdt,sdt)
+        cursor.execute(query)
         rows = cursor.fetchall()
         
         if rows:
@@ -836,7 +836,7 @@ def tra_cuu_auto_call():
         }), 500
     finally:
         if conn:
-            conn.close_connection()
+            conn.close()
 
 # API để thêm người dùng mới vào bảng OBCCOS_PRO_USER_CCOS
 @app.route('/db/add_user_ccos', methods=['POST'])
@@ -878,7 +878,7 @@ def add_user_ccos():
     except pyodbc.Error as e:
         return jsonify({'message': 'Lỗi khi thêm user ccos', 'error_code': '-1'}), 500
     finally:
-        conn.close_connection()
+        conn.close()
 
 @app.route('/db/edit_user_ccos', methods=['POST'])
 def edit_user_ccos():
@@ -923,7 +923,7 @@ def edit_user_ccos():
     except pyodbc.Error as e:
         return jsonify({'message': 'Lỗi cập nhật user ccos', 'error_code': '-1'}), 500
     finally:
-        conn.close_connection()
+        conn.close()
 
 @app.route('/db/list_user_ccos', methods=['GET'])
 def get_list_user_ccos():
@@ -963,7 +963,7 @@ def get_list_user_ccos():
     
     finally:
         cursor.close()
-        conn.close_connection()
+        conn.close()
 
 # Endpoint test server
 @app.route('/ping', methods=['GET'])
