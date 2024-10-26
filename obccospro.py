@@ -6,6 +6,7 @@ import jwt
 from datetime import datetime, timedelta
 from session_manager import SessionManager
 from crossale import CrossSaleAutomation
+from connection import Connection
 import secrets
 from functools import wraps
 
@@ -32,11 +33,11 @@ def token_required(f):
         # Lấy token từ Authorization header
         if 'Authorization' in request.headers:
             auth_header = request.headers['Authorization']
-            # Kiểm tra nếu Authorization bắt đầu bằng "Beer "
-            if auth_header.startswith('Beer '):
-                token = auth_header.split(" ")[1]  # Lấy phần token sau "Beer"
+            # Kiểm tra nếu Authorization bắt đầu bằng "Bearer "
+            if auth_header.startswith('Bearer '):
+                token = auth_header.split(" ")[1]  # Lấy phần token sau "Bearer"
             else:
-                return jsonify({'message': 'Token phải ở dạng Beer token!'}), 401
+                return jsonify({'message': 'Token phải ở dạng Bearer token!'}), 401
 
         if not token:
             return jsonify({'message': 'Token không được cung cấp!'}), 401
@@ -709,7 +710,7 @@ def login_ccos():
     password = client_data.get('password')
 
     # Tạo phiên bản CrossSaleAutomation
-    automation = CrossSaleAutomation()
+    automation = CrossSaleAutomation(username)
     login_response = automation.login_to_system(username, password)
 
     if login_response['LoginSuccess']:
@@ -761,6 +762,208 @@ def gia_han_ckd(current_user):
     gia_han_response = automation.gia_han(client_url)
 
     return jsonify(gia_han_response)
+
+# Hàm tra cứu AutoCall
+@app.route('/db/TraCuuAutoCall', methods=['POST'])
+def tra_cuu_auto_call():
+    data = request.get_json()
+    sdt = data.get("sdt")
+
+    if not sdt:
+        return jsonify({
+            "message": "Số điện thoại không hợp lệ.",
+            "error_code": "-1",
+            "data": None
+        }), 400
+
+    try:
+        db_connection = Connection("DESKTOP-4PDD8RG\VNPT","VNPT", "sa", "Tntn@1314520")
+        conn =  db_connection.get_db_connection()
+        if not conn:
+            return jsonify({
+                "message": "Không thể kết nối tới cơ sở dữ liệu.",
+                "error_code": "-1",
+                "data": None
+            }), 500
+
+        cursor = conn.cursor()
+        query = """
+        select tmp.* from
+        (select 'CKD' as 'loai_ct', a.created_at, a.username, a.customer_state
+        from Danh_Sach_AutoCall a 
+        where right(a.customer_phone,9) = right('{}',9)
+        and DATEDIFF(DAY, a.created_at, GETDATE()) < 45
+        union all
+        select 'CKN' as 'loai_ct', b.created_at, b.username, b.customer_state
+        from Danh_Sach_AutoCall_CKN b 
+        where right(b.customer_phone,9) = right('{}',9)
+        and DATEDIFF(DAY, b.created_at, GETDATE()) < 45
+        ) tmp
+        order by tmp.created_at desc
+        """
+        cursor.execute(query, (sdt,sdt))
+        rows = cursor.fetchall()
+        
+        if rows:
+            results = []
+            for row in rows:
+                result = {
+                    "LoaiChuongTrinh": row.loai_ct,
+                    "NguoiThucHien": row.username,
+                    "SoDienThoai": sdt,
+                    "NgayThucHien": row.created_at if row.created_at else None,
+                    "TrangThaiOB": row.customer_state
+                }
+                results.append(result)
+            return jsonify({
+                "message": "Lấy lịch sử gọi thành công!",
+                "error_code": "0",
+                "data": results
+            })
+        else:
+            return jsonify({
+                "message": "Không tìm thấy lịch sử gọi cho số điện thoại này.",
+                "error_code": "0",
+                "data": None
+            }), 404
+
+    except Exception as e:
+        print("Error:", e)
+        return jsonify({
+            "message": "Đã xảy ra lỗi khi xử lý yêu cầu.",
+            "error_code": "-1",
+            "data": None
+        }), 500
+    finally:
+        if conn:
+            conn.close_connection()
+
+# API để thêm người dùng mới vào bảng OBCCOS_PRO_USER_CCOS
+@app.route('/db/add_user_ccos', methods=['POST'])
+def add_user_ccos():
+    data = request.json
+    obccos_user_code = data.get('obccos_user_code')
+    username_ccos = data.get('username_ccos')
+    password_ccos = data.get('password_ccos')
+    trang_thai = 1
+    ngay_tao = datetime.now()
+
+    # Kết nối database
+    db_connection = Connection("DESKTOP-4PDD8RG\VNPT","VNPT", "sa", "Tntn@1314520")
+    conn =  db_connection.get_db_connection()
+    if conn is None:
+        return jsonify({'message': 'Database connection error'}), 500
+    
+    cursor = conn.cursor()
+    try:
+        # Kiểm tra xem người dùng đã tồn tại chưa
+        cursor.execute('''
+            SELECT * FROM OBCCOS_PRO_USER_CCOS
+            WHERE obccos_user_code = ? AND username_ccos = ?
+        ''', (obccos_user_code, username_ccos))
+        
+        existing_user = cursor.fetchone()
+        
+        if existing_user:
+            return jsonify({'message': 'User CCOS đã tồn tại', 'error_code': '-1'}), 400
+
+        # Nếu người dùng chưa tồn tại, thêm mới
+        cursor.execute('''
+            INSERT INTO OBCCOS_PRO_USER_CCOS (obccos_user_code, username_ccos, password_ccos, trang_thai, ngay_tao)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (obccos_user_code, username_ccos, password_ccos, trang_thai, ngay_tao))
+        
+        conn.commit()
+        return jsonify({'message': 'Thêm user ccos thành công!', 'error_code': '0'}), 201
+    except pyodbc.Error as e:
+        return jsonify({'message': 'Lỗi khi thêm user ccos', 'error_code': '-1'}), 500
+    finally:
+        conn.close_connection()
+
+@app.route('/db/edit_user_ccos', methods=['POST'])
+def edit_user_ccos():
+    data = request.json
+    obccos_user_code = data.get('obccos_user_code')
+    username_ccos = data.get('username_ccos')
+    new_password_ccos = data.get('password_ccos')
+    new_trang_thai = data.get('trang_thai')
+
+    # Kiểm tra đầu vào: chiều dài > 3
+    if len(obccos_user_code) <= 3 or len(username_ccos) <= 3:
+        return jsonify({'message': 'Invalid input', 'error_code': 'BSS-00000005'}), 400
+
+    # Kết nối database
+    db_connection = Connection("DESKTOP-4PDD8RG\VNPT","VNPT", "sa", "Tntn@1314520")
+    conn =  db_connection.get_db_connection()
+    if conn is None:
+        return jsonify({'message': 'Database connection error'}), 500
+    
+    cursor = conn.cursor()
+    try:
+        # Kiểm tra sự tồn tại của người dùng
+        cursor.execute('''
+            SELECT * FROM OBCCOS_PRO_USER_CCOS
+            WHERE obccos_user_code = ? AND username_ccos = ?
+        ''', (obccos_user_code, username_ccos))
+        
+        existing_user = cursor.fetchone()
+        
+        if not existing_user:
+            return jsonify({'message': 'User CCOS không tồn tại', 'error_code': '-1'}), 404
+
+        # Cập nhật password và trạng thái nếu người dùng tồn tại
+        cursor.execute('''
+            UPDATE OBCCOS_PRO_USER_CCOS
+            SET password_ccos = ?, trang_thai = ?
+            WHERE obccos_user_code = ? AND username_ccos = ?
+        ''', (new_password_ccos, new_trang_thai, obccos_user_code, username_ccos))
+        
+        conn.commit()
+        return jsonify({'message': 'Cập nhật user ccos thành công!', 'error_code': '0'}), 200
+    except pyodbc.Error as e:
+        return jsonify({'message': 'Lỗi cập nhật user ccos', 'error_code': '-1'}), 500
+    finally:
+        conn.close_connection()
+
+@app.route('/db/list_user_ccos', methods=['GET'])
+def get_list_user_ccos():
+    obccos_user_code = request.args.get('obccos_user_code')
+    
+    if not obccos_user_code:
+        return jsonify({"message": "obccos_user_code is required", "error_code": "-1", "data": None}), 400
+    
+    try:
+        db_connection = Connection("DESKTOP-4PDD8RG\VNPT","VNPT", "sa", "Tntn@1314520")
+        conn =  db_connection.get_db_connection()
+        cursor = conn.cursor()
+
+        # Query để lấy thông tin user CCOS
+        query = "SELECT * FROM OBCCOS_PRO_USER_CCOS WHERE obccos_user_code = ?"
+        cursor.execute(query, (obccos_user_code,))
+        
+        users = cursor.fetchall()
+        
+        # Chuyển đổi dữ liệu thành danh sách dictionary
+        result = []
+        for user in users:
+            result.append({
+                "obccos_user_code": user.obccos_user_code,
+                "username_ccos": user.username_ccos,
+                "trang_thai": user.trang_thai,
+                "ngay_tao": user.ngay_tao.strftime("%Y-%m-%d %H:%M:%S")  # Định dạng ngày tháng
+            })
+        
+        if not result:
+            return jsonify({"message": "Không có user ccos nào!", "error_code": "0", "data": None}), 404
+
+        return jsonify({"message": "Tải danh sách user ccos thành công!", "error_code": "0", "data": result}), 200
+
+    except Exception as e:
+        return jsonify({"message": "Xảy ra lỗi trong quá trình tải danh sách user ccos", "error_code": "0", "data": None}), 500
+    
+    finally:
+        cursor.close()
+        conn.close_connection()
 
 # Endpoint test server
 @app.route('/ping', methods=['GET'])

@@ -13,18 +13,23 @@ from urllib.parse import urlparse, parse_qs
 
 class CrossSaleAutomation:
     def __init__(self, user_ccos):
-        self.chrome_driver_path = r"D:\ThangTGM\Tool\PYTHON\chromedriver-win64\chromedriver.exe" # chỉnh lại khi chuyển máy
-        self.user_profile_path = r"D:\ThangTGM\Tool\PYTHON\chromedriver-win64\chromedriver.exe" + user_ccos # chỉnh lại khi chuyển máy
+        self.chrome_driver_path = r"D:\ThangTGM\Tool\PYTHON\Test\chromedriver-win64\chromedriver.exe" # chỉnh lại khi chuyển máy
+        self.user_profile_path = r"C:\Users\Dell\AppData\Local\Google\Chrome\User Data\Profile_" + user_ccos # chỉnh lại khi chuyển máy
         self.driver = None
+        self.init_driver()
+        print(f"chrome_driver_path: {self.chrome_driver_path}")
+        print(f"user_profile_path: {self.user_profile_path}")
 
     def init_driver(self):
         chrome_options = Options()
+        
         chrome_options.add_argument(f"user-data-dir={self.user_profile_path}")
-        chrome_options.add_argument("--headless")
+        
+        '''chrome_options.add_argument("--headless")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--window-size=1920x1080")
         chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-dev-shm-usage")'''
 
         try:
             service = Service(self.chrome_driver_path)
@@ -63,15 +68,21 @@ class CrossSaleAutomation:
             WebDriverWait(self.driver, 10).until(
                 EC.url_changes("http://loginccos.vnpt.vn/Login.aspx")
             )
-            print("Đăng nhập thành công!")
 
-            current_url = self.driver.current_url
+            if self.driver.title == "Đăng nhập hệ thống SSO VNPT":
+                print("Đăng nhập thất bại!")
+                return {
+                    "LoginSuccess": False,
+                    "NeedOTP": False,
+                    "Messenger": "Đăng nhập thất bại!"
+                }
+            
+            print("Đăng nhập thành công!")
             
             return {
                 "LoginSuccess": True,
                 "NeedOTP": True,
-                "Messenger": "Đăng nhập thành công, yêu cầu nhập OTP.",
-                "ConfirmOTPUrl": current_url
+                "Messenger": "Đăng nhập thành công, yêu cầu nhập OTP."
             }
 
         except TimeoutException:
@@ -79,16 +90,14 @@ class CrossSaleAutomation:
             return {
                 "LoginSuccess": False,
                 "NeedOTP": False,
-                "Messenger": "Trang tải quá lâu hoặc không tìm thấy phần tử!",
-                "ConfirmOTPUrl": ""
+                "Messenger": "Trang tải quá lâu hoặc không tìm thấy phần tử!"
             }
         except Exception as e:
             print(f"Lỗi khi đăng nhập: {e}")
             return {
                 "LoginSuccess": False,
                 "NeedOTP": False,
-                "Messenger": f"Lỗi khi đăng nhập: {str(e)}",
-                "ConfirmOTPUrl": ""
+                "Messenger": f"Lỗi khi đăng nhập: {str(e)}"
             }
 
     def enter_otp(self, otp):
